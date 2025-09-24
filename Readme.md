@@ -112,6 +112,7 @@ Access dashboard and perform CRUD operations on tasks
 
 Use Postman collection to test all API endpoints
 
+
 Postman Collection
 Postman collection JSON file is included: PostmanCollection.json
 
@@ -125,6 +126,21 @@ JWT tokens are required for protected routes
 Passwords are hashed for security
 
 Backend and frontend are separate; ensure both are running simultaneously
+## Scalability Considerations
+
+- **Microservices**: The backend is modular (models, routes, middleware), which allows splitting into separate services for tasks, users, and authentication in future.
+- **Caching**: Frequently accessed data (tasks list) can be cached using Redis to reduce DB load.
+- **Load Balancing**: The API can be deployed behind a load balancer to handle multiple concurrent requests.
+- **JWT Authentication**: Stateless authentication allows scaling horizontally without session sharing.
+- **Database**: MongoDB Atlas cluster provides high availability, replication, and scalability for production.
+- **Future Enhancements**:
+  - Role-based access with admin vs user
+  - Logging with tools like Winston
+  - Dockerization for consistent deployment
+
+
+
+
 
 Author
 Niharika Vyas

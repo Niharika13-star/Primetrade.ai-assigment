@@ -1,196 +1,133 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Container, Card, Button, Form, Row, Col, Alert, Modal } from "react-bootstrap";
+import { Container, Row, Col, Card, Button, Form, Alert, Navbar, Nav } from "react-bootstrap";
 
 function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
-  const [editTask, setEditTask] = useState(null); // task being edited
-  const [showModal, setShowModal] = useState(false);
-
   const token = localStorage.getItem("token");
-
-  const config = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
-
-  // Fetch tasks
-  const fetchTasks = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/tasks", config);
-      setTasks(res.data);
-    } catch (err) {
-      console.error(err);
-      setMessage("Error fetching tasks.");
-    }
-  };
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  // Add task
-  const handleAddTask = async (e) => {
-    e.preventDefault();
-    if (!title || !description) {
-      setMessage("Please provide both title and description.");
-      return;
+  const fetchTasks = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/tasks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTasks(res.data);
+    } catch (err) {
+      setMessage("Error fetching tasks.");
     }
+  };
+
+  const addTask = async (e) => {
+    e.preventDefault();
     try {
       const res = await axios.post(
         "http://localhost:5000/api/tasks",
         { title, description },
-        config
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setTasks([...tasks, res.data]);
       setTitle("");
       setDescription("");
       setMessage("Task added successfully!");
     } catch (err) {
-      console.error(err);
       setMessage("Error adding task.");
     }
   };
 
-  // Delete task
-  const handleDelete = async (id) => {
+  const deleteTask = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/tasks/${id}`, config);
+      await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setTasks(tasks.filter((task) => task._id !== id));
-      setMessage("Task deleted.");
+      setMessage("Task deleted successfully!");
     } catch (err) {
-      console.error(err);
       setMessage("Error deleting task.");
     }
   };
 
-  // Open edit modal
-  const handleEdit = (task) => {
-    setEditTask(task);
-    setShowModal(true);
-  };
-
-  // Save edited task
-  const handleSaveEdit = async () => {
-    try {
-      const res = await axios.put(
-        `http://localhost:5000/api/tasks/${editTask._id}`,
-        { title: editTask.title, description: editTask.description },
-        config
-      );
-      setTasks(tasks.map((t) => (t._id === res.data._id ? res.data : t)));
-      setShowModal(false);
-      setEditTask(null);
-      setMessage("Task updated successfully!");
-    } catch (err) {
-      console.error(err);
-      setMessage("Error updating task.");
-    }
-  };
-
   return (
-    <Container style={{ marginTop: "30px" }}>
-      <h2 className="mb-4">Task Dashboard</h2>
-
-      {message && <Alert variant="info">{message}</Alert>}
-
-      {/* Add Task Form */}
-      <Form onSubmit={handleAddTask} className="mb-4">
-        <Row>
-          <Col md={4}>
-            <Form.Control
-              type="text"
-              placeholder="Task title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </Col>
-          <Col md={5}>
-            <Form.Control
-              type="text"
-              placeholder="Task description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </Col>
-          <Col md={3}>
-            <Button type="submit" variant="primary" block>
-              Add Task
+    <>
+      <Navbar bg="dark" variant="dark" className="mb-4">
+        <Container>
+          <Navbar.Brand>Task Dashboard</Navbar.Brand>
+          <Nav>
+            <Button
+              variant="outline-light"
+              onClick={() => {
+                localStorage.removeItem("token");
+                window.location.href = "/login";
+              }}
+            >
+              Logout
             </Button>
-          </Col>
+          </Nav>
+        </Container>
+      </Navbar>
+
+      <Container>
+        {message && <Alert variant="info">{message}</Alert>}
+
+        <Card className="mb-4 shadow-sm">
+          <Card.Body>
+            <Card.Title>Add New Task</Card.Title>
+            <Form onSubmit={addTask}>
+              <Form.Group className="mb-2">
+                <Form.Label>Title</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter task title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter task description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </Form.Group>
+              <Button variant="primary" type="submit">
+                Add Task
+              </Button>
+            </Form>
+          </Card.Body>
+        </Card>
+
+        <h4>Your Tasks</h4>
+        <Row>
+          {tasks.length > 0 ? (
+            tasks.map((task) => (
+              <Col md={4} className="mb-3" key={task._id}>
+                <Card className="shadow-sm">
+                  <Card.Body>
+                    <Card.Title>{task.title}</Card.Title>
+                    <Card.Text>{task.description}</Card.Text>
+                    <Button variant="danger" onClick={() => deleteTask(task._id)}>
+                      Delete
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))
+          ) : (
+            <p>No tasks added yet.</p>
+          )}
         </Row>
-      </Form>
-
-      {/* Task List */}
-      <Row>
-        {tasks.map((task) => (
-          <Col md={4} key={task._id} className="mb-3">
-            <Card>
-              <Card.Body>
-                <Card.Title>{task.title}</Card.Title>
-                <Card.Text>{task.description}</Card.Text>
-                <Button
-                  variant="warning"
-                  size="sm"
-                  className="me-2"
-                  onClick={() => handleEdit(task)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(task._id)}
-                >
-                  Delete
-                </Button>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Edit Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Task</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-2">
-              <Form.Label>Title</Form.Label>
-              <Form.Control
-                type="text"
-                value={editTask?.title || ""}
-                onChange={(e) =>
-                  setEditTask({ ...editTask, title: e.target.value })
-                }
-              />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                type="text"
-                value={editTask?.description || ""}
-                onChange={(e) =>
-                  setEditTask({ ...editTask, description: e.target.value })
-                }
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSaveEdit}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+      </Container>
+    </>
   );
 }
 
